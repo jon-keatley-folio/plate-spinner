@@ -1,7 +1,7 @@
 # plate-spinner
 App for staying on top of recurring tasks
 
-                                                                                           
+```                                                                          
                                                   ░     ░░                                 
                       ░░▓▒                ░░▒░░░ ░▒▓▓▓▒░  ░░                               
                  ░░ ░░                   ░░░ ░ ▒▒▒▓▓▓▓░                        ░░          
@@ -34,4 +34,5 @@ App for staying on top of recurring tasks
                                             ░██▒                                           
                                             ██                                             
                          ░░░░░░░░░░░░░░░░░░░███░░░░░░░░░░░░░░░░░░ ░                        
-                                ░    ░  ░░         ░   ░  ░                                
+                                ░    ░  ░░         ░   ░  ░              
+```
