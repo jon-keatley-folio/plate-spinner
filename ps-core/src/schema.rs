@@ -13,6 +13,6 @@ CREATE TABLE IF NOT EXISTS psv1.plates(
     started DATE,
     saved UINT32,
     spinning BOOL, 
-)
+);
 ";
 
