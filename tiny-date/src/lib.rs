@@ -45,7 +45,7 @@ pub struct DateInterval
 
 
 #[derive(Clone)]
-struct Date
+pub struct Date
 {
     day:u32,
     month:u32,
@@ -72,6 +72,18 @@ fn is_leap_year(year:u32) -> bool
     false
 }
 
+fn get_max_days_for_month(year:u32, month:u32) -> u32
+{
+    if is_leap_year(year) && month == 2
+    {
+        NUMBER_OF_DAYS[(month -1) as usize] + 1u32
+    }
+    else
+    {
+        NUMBER_OF_DAYS[(month -1) as usize]
+    }
+}
+
 impl Date
 {
     pub fn new(day:u32,month:u32,year:u32) -> Result<Date,DateError>
@@ -86,14 +98,7 @@ impl Date
             return Err(DateError::InvalidMonth);
         }
         
-        let max_days_for_month = if is_leap_year(year) && month == 2
-        {
-            NUMBER_OF_DAYS[(month -1) as usize] + 1u32
-        }
-        else
-        {
-            NUMBER_OF_DAYS[(month -1) as usize]
-        };
+        let max_days_for_month = get_max_days_for_month(year, month);
         
         if day < 1 || day > max_days_for_month
         {
@@ -138,17 +143,25 @@ impl Date
                     self.year
                 };
                 
-                // TODO handle max days
+                let max_days_this_month = get_max_days_for_month(new_year, new_month);
+                let new_day = if max_days_this_month >= self.day
+                {
+                    self.day
+                }
+                else
+                {
+                    new_month += 1;
+                    self.day - max_days_this_month
+                };
                 
-                
-                Date::new(self.day, new_month , new_year)
+                Date::new(new_day, new_month , new_year)
             },
             Interval::Day => {
                 let mut new_day = self.day + interval.amount;
                 let mut new_month = self.month;
                 let mut new_year = self.year;
                 
-                let max_days_for_month = NUMBER_OF_DAYS[(self.month -1) as usize];
+                let max_days_for_month = get_max_days_for_month(new_year, new_month);
                 
                 if new_day > max_days_for_month
                 {
@@ -239,6 +252,91 @@ mod tiny_dates_tests {
         {
             let tr = Date::new(29,2,year);
             assert!(tr.is_err());
+        }
+    }
+    
+    #[test]
+    fn test_day_interval()
+    {
+        let start_day = Date::new(10,1,2004).unwrap();
+        let leap_day = Date::new(28,2,2004).unwrap();
+        
+        let test_day = start_day.apply_interval(
+            DateInterval{
+                amount:10,
+                period:Interval::Day
+            }
+        );
+        
+        assert!(test_day.is_ok());
+        
+        if let Ok(result) = test_day
+        {
+            assert_eq!(result.day(), 20);
+            assert_eq!(result.month(), 1);
+            assert_eq!(result.year(), 2004);
+        }
+        
+        let test_roll_over = start_day.apply_interval(
+            DateInterval { amount: 22, period: Interval::Day }
+        );
+        
+        assert!(test_roll_over.is_ok());
+        
+        if let Ok(result) = test_roll_over
+        {
+            assert_eq!(result.day(), 1);
+            assert_eq!(result.month(), 2);
+            assert_eq!(result.year(), 2004);
+        }
+        
+        let test_leap = leap_day.apply_interval(
+            DateInterval { amount: 1, period: Interval::Day }
+            );
+        
+        assert!(test_leap.is_ok());
+        if let Ok(result) = test_leap
+        {
+            assert_eq!(result.day(), 29);
+        }
+        
+    }
+    
+    #[test]
+    fn test_month_interval()
+    {
+        let test_month = Date::new(31,1,2025).unwrap();
+        
+        let test_roll_over = test_month.apply_interval(
+            DateInterval { amount: 1, period: Interval::Month }
+        );
+        
+        assert!(test_roll_over.is_ok());
+        
+        if let Ok(result) = test_roll_over
+        {
+            assert_eq!(result.day(), 3);
+            assert_eq!(result.month(), 3);
+            assert_eq!(result.year(), 2025);
+        }
+    }
+    
+    #[test]
+    fn test_year_interval()
+    {
+        let test_year = Date::new(31,1,2025).unwrap();
+        
+        let test = test_year.apply_interval(
+            DateInterval { amount: 10, period: Interval::Year }
+        );
+        
+        assert!(test.is_ok());
+        
+        if let Ok(result) = test
+        {
+            assert_eq!(result.day(), 31);
+            assert_eq!(result.month(), 1);
+            assert_eq!(result.year(), 2035);
         }
     }
 }

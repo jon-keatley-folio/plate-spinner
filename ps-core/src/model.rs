@@ -1,13 +1,13 @@
-use std::
+use tiny_date::{Date, DateInterval};
 
 pub struct Plate
 {
     id:u32,
     title:String,
     description:String,
-    frequency
-    next DATE,
-    started DATE,
-    saved UINT32,
-    spinning BOOL, 
+    frequency:DateInterval,
+    next:Date,
+    started:Date,
+    saved:u32,
+    spinning:bool, 
 }
