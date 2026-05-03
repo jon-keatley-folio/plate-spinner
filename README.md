@@ -64,11 +64,12 @@ App for staying on top of recurring tasks
 - [ ] CRUD
  - [ ] Add plate
  - [ ] Edit plate
- - [ ] Retire plate
+ - [ ] Pause plate
  - [ ] export plates
 - [ ] list next X plates to drop
 - [ ] spin plate X
-- [ ] 
+- [ ] list all plates
+- [ ] list all paused plates
 
 ## Useful tools
 
