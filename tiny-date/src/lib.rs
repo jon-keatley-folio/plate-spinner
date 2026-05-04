@@ -1,6 +1,7 @@
 use std::fmt;
 use std::fmt::Formatter;
 
+#[derive(PartialEq, Debug)]
 pub enum Months
 {
     January=1,
@@ -30,6 +31,7 @@ const NUMBER_OF_DAYS:[u32; 12]= [
     31u32,31u32,30u32,31u32,30u32,31u32
 ];
 
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Interval
 {
     Day,
@@ -37,6 +39,7 @@ pub enum Interval
     Year,
 }
 
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct DateInterval
 {
     pub amount:u32,
@@ -44,7 +47,7 @@ pub struct DateInterval
 }
 
 
-#[derive(Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Date
 {
     day:u32,

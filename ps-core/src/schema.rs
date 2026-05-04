@@ -10,12 +10,11 @@ CREATE TABLE IF NOT EXISTS psv1.plates(
     description VARCHAR,
     frequency INTERVAL,
     next DATE,
-    started DATE,
     saved UINT32 default 0,
     spinning BOOL default true, 
 );
 
-PREPARE add_plate AS INSERT INTO psv1.plates (title, description, frequency, next, started) VALUES ($1, $2, $3, $4, $5);
+PREPARE add_plate AS INSERT INTO psv1.plates (title, description, frequency, next) VALUES ($1, $2, $3, $4);
 
 PREPARE update_plate AS UPDATE psv1.plates 
 SET title = $1, description = $2, frequency = $3
@@ -39,6 +38,8 @@ ORDER BY next limit $1;
 PREPARE list_plates as SELECT * FROM psv1.plates
 ORDER BY next limit $1 OFFSET $2;
 ";
+
+pub const VALIDATE_SCHEMA_PSV1:&str = "select schema_name from (show schemas) where schema_name='psv1';";
 
 /*
 execute add_plate('test', 'a test plate', '2 days', '2026-5-5', '2026-5-3'); 

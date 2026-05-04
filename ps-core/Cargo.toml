@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-duckdb = "1.10502.0"
+duckdb = { version = "1.10502.0", features = ["bundled"] }
 
 [dependencies.tiny-date]
 version="*"
