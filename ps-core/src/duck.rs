@@ -1,4 +1,4 @@
-use duckdb::{ffi::duckdb_result, params, Connection, Error, Result};
+use duckdb::{ffi::duckdb_result, params, types::ToSqlOutput, Connection, Error, Params, Result, ToSql};
 
 use tiny_date::{Date,DateInterval};
 
@@ -25,6 +25,42 @@ pub(crate) enum Action
     SpinPlate(u32), 
 }
 
+impl Action
+{
+    fn get_prepared_statement(&self) -> String
+    {
+        match self
+        {
+            Self::AddPlate(_,_,_,_ ) => "add_plate".to_string(),
+            Self::UpdatePlate(_,_,_,_) => "update_plate".to_string(),
+            Self::PausePlate(_) => "pause_plate".to_string(),
+            Self::StartPlateSpinning(_) => "start_spinning_plate".to_string(),
+            Self::SpinPlate(_) => "spin_plate".to_string()
+        }
+    }
+    
+    fn as_params(&self) -> Vec<&dyn ToSql>
+    {
+        match self
+        {
+            Self::AddPlate(t,d,f,n ) => 
+            {
+                let date = n.to_string();
+                let interval = f.to_string();
+                Vec::from(params![t, d, interval, date])
+            },
+            Self::UpdatePlate(t,d,f,id) => 
+            {
+                let interval = f.to_string();
+                Vec::from(params![t,d,interval,id])
+            },
+            Self::PausePlate(id) => Vec::from(params![id]),
+            Self::StartPlateSpinning(id) => Vec::from(params![id]),
+            Self::SpinPlate(id) => Vec::from(params![id])
+        }
+    }
+}
+
 #[derive(PartialEq, Debug, Clone)]
 pub(crate) enum List
 {
@@ -32,8 +68,6 @@ pub(crate) enum List
     PausedPlates(u32,u32),
     All(u32,u32)
 }
-
-
 
 pub(crate) fn get_connection(con_uri:&str) -> Result<Connection, DBError>
 {
@@ -97,6 +131,11 @@ pub(crate) fn check_or_create_schema(conn:&Connection) -> Result<bool, DBError>
         },
         Err(e) => return Err(e)
     }
+}
+
+pub fn process_action(conn:&Connection, action:Action) -> Result<bool, DBError>
+{
+    
 }
 
 #[cfg(test)]

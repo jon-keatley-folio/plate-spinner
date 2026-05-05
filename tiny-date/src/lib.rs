@@ -39,11 +39,32 @@ pub enum Interval
     Year,
 }
 
+impl fmt::Display for Interval
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        match self
+        {
+            Self::Day => write!(f, "day"),
+            Self::Month => write!(f, "month"),
+            Self::Year => write!(f, "year")
+        }
+    }
+}
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct DateInterval
 {
     pub amount:u32,
     pub period:Interval
+}
+
+impl fmt::Display for DateInterval
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result
+    {
+        write!(f, "{} {}",  self.amount, self.period)
+    }
 }
 
 
