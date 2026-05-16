@@ -1,5 +1,6 @@
-use duckdb::{ffi::duckdb_result, params, types::ToSqlOutput, Connection, Error, Params, Result, ToSql};
+use std::ops::Deref;
 
+use duckdb::{params, Connection, Error, Result, ToSql};
 use tiny_date::{Date,DateInterval};
 
 use crate::schema::{PS_V1_SCHEMA, VALIDATE_SCHEMA_PSV1};
@@ -29,35 +30,51 @@ impl Action
 {
     fn get_prepared_statement(&self) -> String
     {
+        let sql="EXECUTE";
         match self
         {
-            Self::AddPlate(_,_,_,_ ) => "add_plate".to_string(),
-            Self::UpdatePlate(_,_,_,_) => "update_plate".to_string(),
-            Self::PausePlate(_) => "pause_plate".to_string(),
-            Self::StartPlateSpinning(_) => "start_spinning_plate".to_string(),
-            Self::SpinPlate(_) => "spin_plate".to_string()
+            Self::AddPlate(_,_,_,_ ) => format!("{} {}(?,?,?,?);",sql,"add_plate"),
+            Self::UpdatePlate(_,_,_,_) => format!("{} {}(?,?,?,?);",sql,"update_plate"),
+            Self::PausePlate(_) => format!("{} {}(?,?,?,?);",sql,"pause_plate"),
+            Self::StartPlateSpinning(_) => format!("{} {}(?,?,?,?);",sql,"start_spinning_plate"),
+            Self::SpinPlate(_) => format!("{} {}(?,?,?,?);",sql,"spin_plate")
         }
     }
     
-    fn as_params(&self) -> Vec<&dyn ToSql>
+    fn execute(&self, conn:&Connection) -> Result<bool,DBError>
     {
-        match self
+        let params = match self
         {
             Self::AddPlate(t,d,f,n ) => 
             {
                 let date = n.to_string();
                 let interval = f.to_string();
-                Vec::from(params![t, d, interval, date])
+                params![t.clone(), d.clone(), interval.clone(), date.clone()]
             },
             Self::UpdatePlate(t,d,f,id) => 
             {
                 let interval = f.to_string();
-                Vec::from(params![t,d,interval,id])
+                params![t.clone(),d.clone(),interval.clone(),id.clone()]
             },
-            Self::PausePlate(id) => Vec::from(params![id]),
-            Self::StartPlateSpinning(id) => Vec::from(params![id]),
-            Self::SpinPlate(id) => Vec::from(params![id])
+            Self::PausePlate(id) => params![id.clone()],
+            Self::StartPlateSpinning(id) => params![id.clone()],
+            Self::SpinPlate(id) => params![id.clone()]
+        };
+        
+        let result = conn.execute(
+            &self.get_prepared_statement(),
+            params);
+        
+        if result.is_ok()
+        {
+            Ok(true)
         }
+        else
+        {
+            Err(DBError::UnexpectedResults)
+        }
+        
+        
     }
 }
 
@@ -131,11 +148,6 @@ pub(crate) fn check_or_create_schema(conn:&Connection) -> Result<bool, DBError>
         },
         Err(e) => return Err(e)
     }
-}
-
-pub fn process_action(conn:&Connection, action:Action) -> Result<bool, DBError>
-{
-    
 }
 
 #[cfg(test)]
