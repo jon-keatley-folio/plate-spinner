@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use duckdb::{params, Connection, Error, Result, ToSql};
-use tiny_date::{Date,DateInterval};
+use tiny_date::{Date,DateInterval, Interval};
 
 use crate::schema::{PS_V1_SCHEMA, VALIDATE_SCHEMA_PSV1};
 
@@ -72,9 +72,7 @@ impl Action
         else
         {
             Err(DBError::UnexpectedResults)
-        }
-        
-        
+        }    
     }
 }
 
@@ -82,8 +80,45 @@ impl Action
 pub(crate) enum List
 {
     TopTopples(u32),
-    PausedPlates(u32,u32),
+    PausedPlates(u32),
     All(u32,u32)
+}
+
+impl List
+{
+    fn get_prepared_statement(&self) -> String
+    {
+        let sql="EXECUTE";
+        match self
+        {
+            Self::TopTopples(_) => format!("{} top_topples(?)", sql),
+            Self::PausedPlates(_) => format!("{} paused_plates(?)", sql),
+            Self::All(_,_) => format!("{} list_places(?,?)", sql)
+        }
+    }
+    
+    pub fn execute(&self, conn: &Connection) -> Result<bool, DBError>
+    {
+        let params = match self
+        {
+            Self::TopTopples(limit) => params![limit.clone()],
+            Self::PausedPlates(limit) => params![limit.clone()],
+            Self::All(limit,offset ) => params![limit.clone(), offset.clone()]
+        };
+        
+        let result = conn.execute(
+            &self.get_prepared_statement(),
+            params);
+        
+        if result.is_ok()
+        {
+            Ok(true)
+        }
+        else
+        {
+            Err(DBError::UnexpectedResults)
+        }
+    }
 }
 
 pub(crate) fn get_connection(con_uri:&str) -> Result<Connection, DBError>
@@ -180,6 +215,31 @@ mod tiny_the_ducks {
         
         assert!(schema_check_two.is_ok());
         assert!(schema_check_two.unwrap());
+    }
+    
+    #[test]
+    fn test_actions()
+    {
+        let conn = get_connection("memory").unwrap();
+        let results = setup_schema(&conn);
+        assert!(results);
+        
+        //add
+        let date = Date::new(10,1,2025).unwrap();
+        let add = Action::AddPlate(
+            "test title".to_string(),
+            "this is a test".to_string(),
+            DateInterval{
+                amount:2,
+                period:Interval::Day
+            },
+            date
+        );
+        
+        let result = add.execute(&conn);
+        
+        assert!(result.is_ok());
+        
     }
     
 }
