@@ -3,7 +3,7 @@ use std::ops::Deref;
 use duckdb::{params, Connection, Error, Result, ToSql};
 use tiny_date::{Date,DateInterval, Interval};
 
-use crate::schema::{PS_V1_SCHEMA, VALIDATE_SCHEMA_PSV1};
+use crate::schema::{PS_V1_SCHEMA, VALIDATE_SCHEMA_PSV1, LATEST_VERSION};
 
 
 #[derive(PartialEq, Debug, Clone)]
@@ -33,11 +33,11 @@ impl Action
         let sql="EXECUTE";
         match self
         {
-            Self::AddPlate(_,_,_,_ ) => format!("{} {}(?,?,?,?);",sql,"add_plate"),
-            Self::UpdatePlate(_,_,_,_) => format!("{} {}(?,?,?,?);",sql,"update_plate"),
-            Self::PausePlate(_) => format!("{} {}(?,?,?,?);",sql,"pause_plate"),
-            Self::StartPlateSpinning(_) => format!("{} {}(?,?,?,?);",sql,"start_spinning_plate"),
-            Self::SpinPlate(_) => format!("{} {}(?,?,?,?);",sql,"spin_plate")
+            Self::AddPlate(_,_,_,_ ) => format!("{} {}", sql,"add_plate"),
+            Self::UpdatePlate(_,_,_,_) => format!("{} {}(?,?,?,?)",sql,"update_plate"),
+            Self::PausePlate(_) => format!("{} {}(?,?,?,?)",sql,"pause_plate"),
+            Self::StartPlateSpinning(_) => format!("{} {}(?,?,?,?)",sql,"start_spinning_plate"),
+            Self::SpinPlate(_) => format!("{} {}(?,?,?,?)",sql,"spin_plate")
         }
     }
     
@@ -47,32 +47,44 @@ impl Action
         {
             Self::AddPlate(t,d,f,n ) => 
             {
-                let date = n.to_string();
-                let interval = f.to_string();
-                params![t.clone(), d.clone(), interval.clone(), date.clone()]
+                format!("('{}','{}','{}','{}')",t, d, f.to_string(), n.to_string())
             },
             Self::UpdatePlate(t,d,f,id) => 
             {
                 let interval = f.to_string();
-                params![t.clone(),d.clone(),interval.clone(),id.clone()]
+                format!("('{}','{}','{}',{})",t.clone(),d.clone(),interval.clone(),id.clone())
             },
-            Self::PausePlate(id) => params![id.clone()],
-            Self::StartPlateSpinning(id) => params![id.clone()],
-            Self::SpinPlate(id) => params![id.clone()]
+            Self::PausePlate(id) => format!("{}",id.clone()),
+            Self::StartPlateSpinning(id) => format!("{}",id.clone()),
+            Self::SpinPlate(id) => format!("{}",id.clone())
         };
         
-        let result = conn.execute(
-            &self.get_prepared_statement(),
-            params);
-        
-        if result.is_ok()
+        let query = format!(
+            "{}{}",
+            self.get_prepared_statement(),
+            params
+        );
+        let prep = conn.prepare(&query);
+        match prep
         {
-            Ok(true)
-        }
-        else
-        {
-            Err(DBError::UnexpectedResults)
-        }    
+            Ok(mut p) =>
+            {
+                match p.execute([])
+                {
+                    Ok(_) => return Ok(true),
+                    Err(e) =>
+                    {
+                        println!("ERROR: {}, {}",e, self.get_prepared_statement());
+                        return Err(DBError::UnexpectedResults)
+                    }
+                }
+            },
+            Err(e) => 
+            {
+                println!("Failed to prepare Action. {}",e);
+                return Err(DBError::FailedToCompileQuery)
+            }
+        }  
     }
 }
 
@@ -136,6 +148,15 @@ pub(crate) fn get_connection(con_uri:&str) -> Result<Connection, DBError>
     {
         Ok(c) => return Ok(c),
         Err(_) => return Err(DBError::FailedToConnect)
+    }
+}
+
+pub(crate) fn select_version(conn:&Connection) -> Result<(),DBError>
+{
+    match conn.execute(&format!("use {}",LATEST_VERSION), [])
+    {
+        Ok(_) => Ok(()),
+        Err(_) => Err(DBError::FailedToConnect)
     }
 }
 
@@ -223,6 +244,7 @@ mod tiny_the_ducks {
         let conn = get_connection("memory").unwrap();
         let results = setup_schema(&conn);
         assert!(results);
+        assert!(select_version(&conn).is_ok());
         
         //add
         let date = Date::new(10,1,2025).unwrap();

@@ -41,6 +41,7 @@ ORDER BY next limit $1 OFFSET $2;
 
 pub const VALIDATE_SCHEMA_PSV1:&str = "select schema_name from (show schemas) where schema_name='psv1';";
 
+pub const LATEST_VERSION:&str = "psv1";
 /*
 execute add_plate('test', 'a test plate', '2 days', '2026-5-5', '2026-5-3'); 
 */
