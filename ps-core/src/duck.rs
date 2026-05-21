@@ -34,10 +34,10 @@ impl Action
         match self
         {
             Self::AddPlate(_,_,_,_ ) => format!("{} {}", sql,"add_plate"),
-            Self::UpdatePlate(_,_,_,_) => format!("{} {}(?,?,?,?)",sql,"update_plate"),
-            Self::PausePlate(_) => format!("{} {}(?,?,?,?)",sql,"pause_plate"),
-            Self::StartPlateSpinning(_) => format!("{} {}(?,?,?,?)",sql,"start_spinning_plate"),
-            Self::SpinPlate(_) => format!("{} {}(?,?,?,?)",sql,"spin_plate")
+            Self::UpdatePlate(_,_,_,_) => format!("{} {}",sql,"update_plate"),
+            Self::PausePlate(_) => format!("{} {}",sql,"pause_plate"),
+            Self::StartPlateSpinning(_) => format!("{} {}",sql,"start_spinning_plate"),
+            Self::SpinPlate(_) => format!("{} {}",sql,"spin_plate")
         }
     }
     
@@ -71,7 +71,14 @@ impl Action
             {
                 match p.execute([])
                 {
-                    Ok(_) => return Ok(true),
+                    Ok(change) => return if change > 0 
+                    {
+                        Ok(true)
+                    }
+                    else
+                    {
+                        Err(DBError::UnexpectedResults)
+                    },
                     Err(e) =>
                     {
                         println!("ERROR: {}, {}",e, self.get_prepared_statement());
@@ -258,9 +265,21 @@ mod tiny_the_ducks {
             date
         );
         
-        let result = add.execute(&conn);
+        let add_result = add.execute(&conn);
+        assert!(add_result.is_ok());
         
-        assert!(result.is_ok());
+        //update
+        let edit = Action::UpdatePlate(
+            "title update".to_string(),
+            "this is a test p2".to_string(),
+            DateInterval { amount: 3, period: Interval::Day },
+            1u32
+        );
+        
+        let edit_result = edit.execute(&conn);
+        assert!(edit_result.is_ok());
+        
+        //let pause = Action::
         
     }
     
