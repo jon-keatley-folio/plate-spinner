@@ -54,9 +54,9 @@ impl Action
                 let interval = f.to_string();
                 format!("('{}','{}','{}',{})",t.clone(),d.clone(),interval.clone(),id.clone())
             },
-            Self::PausePlate(id) => format!("{}",id.clone()),
-            Self::StartPlateSpinning(id) => format!("{}",id.clone()),
-            Self::SpinPlate(id) => format!("{}",id.clone())
+            Self::PausePlate(id) => format!("({})",id.clone()),
+            Self::StartPlateSpinning(id) => format!("({})",id.clone()),
+            Self::SpinPlate(id) => format!("({})",id.clone())
         };
         
         let query = format!(
@@ -129,6 +129,10 @@ impl List
             &self.get_prepared_statement(),
             params);
         
+       // match result
+        //{
+       //     Ok(rows)
+       // }
         if result.is_ok()
         {
             Ok(true)
@@ -279,8 +283,72 @@ mod tiny_the_ducks {
         let edit_result = edit.execute(&conn);
         assert!(edit_result.is_ok());
         
-        //let pause = Action::
+        let pause = Action::PausePlate(1u32);
+        let pause_result = pause.execute(&conn);
+        assert!(pause_result.is_ok());
         
+        let unpause = Action::StartPlateSpinning(1u32);
+        let unpause_result = unpause.execute(&conn);
+        assert!(unpause_result.is_ok());
+        
+        let spin = Action::SpinPlate(1u32);
+        let spin_result = spin.execute(&conn);
+        assert!(spin_result.is_ok());
+        
+    }
+    
+    fn add_test_plate(step:u32, conn:&Connection)
+    {
+        
+        let mut date = Date::new(10,1,2025).unwrap();
+        let interval = DateInterval{
+                amount:step,
+                period:Interval::Day
+        };
+        date = date.apply_interval(interval.clone()).unwrap();
+            
+        let add = Action::AddPlate(
+            format!("test plate {}", step),
+            "this is a test".to_string(),
+            interval,
+            date
+        );
+        
+        let result = add.execute(conn);
+        assert!(result.is_ok());
+        
+    }
+    
+    #[test]
+    fn test_listing()
+    {
+        let conn = get_connection("memory").unwrap();
+        let results = setup_schema(&conn);
+        assert!(results);
+        assert!(select_version(&conn).is_ok());
+        
+        for i in 1..10
+        {
+            add_test_plate(i, &conn);
+        }
+        
+        let paused_plates = [3u32,6u32,7u32];
+        for i in paused_plates
+        {
+            let p = Action::PausePlate(i);
+            let result = p.execute(&conn);
+            assert!(result.is_ok());
+        }
+        
+        
+        //TopTopples(u32),
+        let top = List::TopTopples(3u32);
+        let top_results = top.execute(&conn);
+        assert!(top_results.is_ok());
+        //PausedPlates(u32),
+        //All(u32,u32)
+        
+        //add 
     }
     
 }
