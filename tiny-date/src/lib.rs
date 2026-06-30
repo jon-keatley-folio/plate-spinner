@@ -29,7 +29,7 @@ pub enum DateError
 const NUMBER_OF_DAYS:[u32; 12]= [
     31u32,28u32,31u32,30u32,31u32,30u32,
     31u32,31u32,30u32,31u32,30u32,31u32
-];
+]; 
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Interval
@@ -201,6 +201,17 @@ impl Date
                 Date::new(new_day, new_month, new_year)
             }
         }
+    }
+    
+    fn from_timestamp(stamp:u64) -> Result<Date, DateError>
+    {
+        let unix_time = Date{ day:1, month:1, year:1970};
+        let interval = DateInterval{
+            amount:24 *3600 * (stamp as u32),
+            period:Interval::Day
+        };
+        
+        unix_time.apply_interval(interval)
     }
 }
 

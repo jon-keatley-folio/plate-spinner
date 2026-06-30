@@ -1,10 +1,7 @@
-use std::ops::Deref;
-
 use duckdb::{params, Connection, Error, Result, ToSql};
-use tiny_date::{Date,DateInterval, Interval};
+use tiny_date::{Date,DateInterval};
 
-use crate::schema::{PS_V1_SCHEMA, VALIDATE_SCHEMA_PSV1, LATEST_VERSION};
-
+use crate::{model::Plate, schema::{LATEST_VERSION, PS_V1_SCHEMA, VALIDATE_SCHEMA_PSV1}};
 
 #[derive(PartialEq, Debug, Clone)]
 pub(crate) enum DBError
@@ -125,9 +122,40 @@ impl List
             Self::All(limit,offset ) => params![limit.clone(), offset.clone()]
         };
         
-        let result = conn.execute(
-            &self.get_prepared_statement(),
-            params);
+        let stmt = match conn.prepare(
+            &self.get_prepared_statement()
+        )
+        {
+            Ok(s) => s,
+            Err(_) => return Err(DBError::UnexpectedResults)
+        };
+        
+        /*
+        id INTEGER PRIMARY KEY DEFAULT nextval('psv1.plate_sequence'),
+        title VARCHAR,
+        description VARCHAR,
+        frequency INTERVAL,
+        next DATE,
+        saved UINT32 default 0,
+        spinning BOOL default true, 
+        */
+        
+        let results: Result<Plate,_> = stmt.query_map(params,
+        |row| {
+            Ok(
+                Plate::new(
+                
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                    row.get(5)?,
+                    row.get(6)?
+                )
+            )
+        }
+        );
         
        // match result
         //{
