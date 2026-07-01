@@ -203,11 +203,11 @@ impl Date
         }
     }
     
-    fn from_timestamp(stamp:u64) -> Result<Date, DateError>
+    pub fn from_timestamp(stamp:u64) -> Result<Date, DateError>
     {
         let unix_time = Date{ day:1, month:1, year:1970};
         let interval = DateInterval{
-            amount:24 *3600 * (stamp as u32),
+            amount:24 * 3600 * (stamp as u32),
             period:Interval::Day
         };
         
@@ -373,5 +373,26 @@ mod tiny_dates_tests {
             assert_eq!(result.month(), 1);
             assert_eq!(result.year(), 2035);
         }
+    }
+    
+    #[test]
+    fn test_from_timestamp()
+    {
+        //2026-02-01 - 1769904000
+        let target_date = Date{
+            year:2026,
+            month:2,
+            day:1
+        };
+        
+        let test_date = Date::from_timestamp(1769904000);
+        
+        assert!(test_date.is_ok());
+        
+        let t = test_date.unwrap();
+        
+        assert_eq!(target_date.year,t.year);
+        assert_eq!(target_date.month,t.month);
+        assert_eq!(target_date.day,t.day);
     }
 }
