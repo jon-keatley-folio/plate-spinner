@@ -31,6 +31,9 @@ const NUMBER_OF_DAYS:[u32; 12]= [
     31u32,31u32,30u32,31u32,30u32,31u32
 ]; 
 
+const HOUR_AS_SECONDS:u32 = 3600;
+const DAY_AS_SECONDS:u32 = 24 * HOUR_AS_SECONDS;
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Interval
 {
@@ -185,10 +188,12 @@ impl Date
                 let mut new_month = self.month;
                 let mut new_year = self.year;
                 
-                let max_days_for_month = get_max_days_for_month(new_year, new_month);
                 
-                if new_day > max_days_for_month
+                let mut max_days_for_month = get_max_days_for_month(new_year, new_month);
+                
+                while new_day > max_days_for_month
                 {
+                    //todo, need to loop until it fits
                     new_day = new_day - max_days_for_month;
                     new_month += 1;
                     if new_month > 12
@@ -196,6 +201,8 @@ impl Date
                         new_month = 1;
                         new_year += 1;
                     }
+                    
+                    max_days_for_month = get_max_days_for_month(new_year, new_month);
                 }
                 
                 Date::new(new_day, new_month, new_year)
@@ -203,11 +210,13 @@ impl Date
         }
     }
     
-    pub fn from_timestamp(stamp:u64) -> Result<Date, DateError>
+    pub fn from_timestamp(stamp:u32) -> Result<Date, DateError>
     {
         let unix_time = Date{ day:1, month:1, year:1970};
+        
+        let days:u32 = stamp / DAY_AS_SECONDS;
         let interval = DateInterval{
-            amount:24 * 3600 * (stamp as u32),
+            amount:days as u32,
             period:Interval::Day
         };
         
