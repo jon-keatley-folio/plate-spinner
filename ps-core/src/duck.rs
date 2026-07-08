@@ -1,5 +1,5 @@
 use duckdb::{params, Connection, Error, Result, ToSql};
-use tiny_date::{Date,DateInterval};
+use tiny_date::{Date,DateInterval, Interval};
 
 use crate::{model::Plate, schema::{LATEST_VERSION, PS_V1_SCHEMA, VALIDATE_SCHEMA_PSV1}};
 
@@ -140,7 +140,7 @@ impl List
         spinning BOOL default true, 
         */
         
-        let results: Result<Plate,_> = stmt.query_map(params,
+        let results: Result<Plate,duckdb::Error> = stmt.query_map(params,
         |row| {
             Ok(
                 Plate::new(
@@ -151,7 +151,8 @@ impl List
                     row.get(3)?,
                     row.get(4)?,
                     row.get(5)?,
-                    row.get(6)?
+                    row.get(6)?,
+                    row.get(7)?
                 )
             )
         }
@@ -161,7 +162,7 @@ impl List
         //{
        //     Ok(rows)
        // }
-        if result.is_ok()
+        if results.is_ok()
         {
             Ok(true)
         }
