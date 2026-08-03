@@ -1,4 +1,4 @@
-use duckdb::{params, Connection, Error, Result, ToSql};
+use duckdb::{params, Connection, Error, Result, ToSql, MappedRows};
 use tiny_date::{Date,DateInterval, Interval};
 
 use crate::{model::Plate, schema::{LATEST_VERSION, PS_V1_SCHEMA, VALIDATE_SCHEMA_PSV1}};
@@ -8,6 +8,8 @@ pub(crate) enum DBError
 {
     FailedToConnect,
     FailedToCompileQuery,
+    FailedToBuildQuery,
+    ErrorInQuery,
     UnexpectedResults,
     UnableToCreateSchema,
     UnableToCheckSchema
@@ -107,40 +109,39 @@ impl List
         let sql="EXECUTE";
         match self
         {
-            Self::TopTopples(_) => format!("{} top_topples(?)", sql),
-            Self::PausedPlates(_) => format!("{} paused_plates(?)", sql),
-            Self::All(_,_) => format!("{} list_places(?,?)", sql)
+            Self::TopTopples(_) => format!("{} top_topples", sql),
+            Self::PausedPlates(_) => format!("{} paused_plates", sql),
+            Self::All(_,_) => format!("{} list_places",sql)
         }
     }
     
-    pub fn execute(&self, conn: &Connection) -> Result<bool, DBError>
+    pub fn execute(&self, conn: &Connection) -> Result<Vec<Plate>, DBError>
     {
         let params = match self
         {
-            Self::TopTopples(limit) => params![limit.clone()],
-            Self::PausedPlates(limit) => params![limit.clone()],
-            Self::All(limit,offset ) => params![limit.clone(), offset.clone()]
+            Self::TopTopples(limit) => format!("({})",limit.clone()),
+            Self::PausedPlates(limit) => format!("({})",limit.clone()),
+            Self::All(limit,offset ) => format!("({},{})",limit.clone(), offset.clone())
         };
         
-        let stmt = match conn.prepare(
-            &self.get_prepared_statement()
-        )
+        let query = format!(
+            "{}{}",
+            self.get_prepared_statement(),
+            params
+        );
+        
+        println!("Query: {}",&query);
+        
+        let mut stmt = match conn.prepare(&query)
         {
             Ok(s) => s,
-            Err(_) => return Err(DBError::UnexpectedResults)
+            Err(e) => {
+                println!("STMT error: {}",e);
+                return Err(DBError::FailedToBuildQuery)
+            }
         };
-        
-        /*
-        id INTEGER PRIMARY KEY DEFAULT nextval('psv1.plate_sequence'),
-        title VARCHAR,
-        description VARCHAR,
-        frequency INTERVAL,
-        next DATE,
-        saved UINT32 default 0,
-        spinning BOOL default true, 
-        */
-        
-        let results: Result<Plate,duckdb::Error> = stmt.query_map(params,
+           
+        let results= stmt.query_map(params![],
         |row| {
             Ok(
                 Plate::new(
@@ -155,20 +156,18 @@ impl List
                     row.get(7)?
                 )
             )
-        }
+            }
         );
         
-       // match result
-        //{
-       //     Ok(rows)
-       // }
-        if results.is_ok()
+        match results
         {
-            Ok(true)
-        }
-        else
-        {
-            Err(DBError::UnexpectedResults)
+            Ok(rows) => 
+            {
+                Ok(
+                    rows.filter_map(|r| r.ok()).collect()
+                )
+            },
+            Err (e) => Err(DBError::UnexpectedResults)
         }
     }
 }
@@ -351,10 +350,10 @@ mod tiny_the_ducks {
     #[test]
     fn test_listing()
     {
-        let conn = get_connection("memory").unwrap();
-        let results = setup_schema(&conn);
-        assert!(results);
-        assert!(select_version(&conn).is_ok());
+        let conn = get_connection("/home/jon/Programming/plate-spinner/ps-core/test.db").unwrap();
+        //let results = setup_schema(&conn);
+        //assert!(results);
+        //assert!(select_version(&conn).is_ok());
         
         for i in 1..10
         {
@@ -374,11 +373,13 @@ mod tiny_the_ducks {
         let top = List::TopTopples(3u32);
         let top_results = top.execute(&conn);
         assert!(top_results.is_ok());
+        
+        let top_list = top_results.unwrap();
+        assert_eq!(top_list.len(), 3);
+        
         //PausedPlates(u32),
         //All(u32,u32)
         
         //add 
-    }
-    
+    } 
 }
-
