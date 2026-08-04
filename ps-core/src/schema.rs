@@ -10,11 +10,15 @@ CREATE TABLE IF NOT EXISTS psv1.plates(
     description VARCHAR,
     frequency INTERVAL,
     next DATE,
+    started DATE,
     saved UINT32 default 0,
     spinning BOOL default true, 
 );
 
-PREPARE add_plate AS INSERT INTO psv1.plates (title, description, frequency, next, spinning) VALUES ($1, $2, $3, $4, true);
+";
+
+pub const PREPARED_STATEMENTS:&str = "
+PREPARE add_plate AS INSERT INTO psv1.plates (title, description, frequency, next, started, spinning) VALUES ($1, $2, $3, $4, $5, true);
 
 PREPARE update_plate AS UPDATE psv1.plates 
 SET title = $1, description = $2, frequency = $3

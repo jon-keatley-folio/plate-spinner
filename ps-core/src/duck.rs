@@ -1,7 +1,7 @@
 use duckdb::{params, Connection, Error, Result, ToSql, MappedRows};
 use tiny_date::{Date,DateInterval, Interval};
 
-use crate::{model::Plate, schema::{LATEST_VERSION, PS_V1_SCHEMA, VALIDATE_SCHEMA_PSV1}};
+use crate::{model::Plate, schema::{LATEST_VERSION, PS_V1_SCHEMA, VALIDATE_SCHEMA_PSV1, PREPARED_STATEMENTS}};
 
 #[derive(PartialEq, Debug, Clone)]
 pub(crate) enum DBError
@@ -46,7 +46,7 @@ impl Action
         {
             Self::AddPlate(t,d,f,n ) => 
             {
-                format!("('{}','{}','{}','{}')",t, d, f.to_string(), n.to_string())
+                format!("('{}','{}','{}','{}','{}')",t, d, f.to_string(), n.to_string(), n.to_string())
             },
             Self::UpdatePlate(t,d,f,id) => 
             {
@@ -163,9 +163,27 @@ impl List
         {
             Ok(rows) => 
             {
-                Ok(
+                let mut plates = Vec::new();
+                for plate_result in rows
+                {
+                    match plate_result
+                    {
+                        Ok(p) => 
+                        {
+                            plates.push(p);
+                        },
+                        Err(e) => 
+                        {
+                            println!("Error parsing plate {:?}",e);
+                        }
+                    }
+                    
+                    
+                }
+                Ok(plates)
+                /*Ok(
                     rows.filter_map(|r| r.ok()).collect()
-                )
+                )*/
             },
             Err (e) => Err(DBError::UnexpectedResults)
         }
@@ -202,6 +220,12 @@ pub(crate) fn select_version(conn:&Connection) -> Result<(),DBError>
 fn setup_schema(conn:&Connection) -> bool
 {
     let result = conn.execute_batch(PS_V1_SCHEMA);
+    result.is_ok()
+}
+
+fn setup_contract(conn:&Connection) -> bool
+{
+    let result = conn.execute_batch(PREPARED_STATEMENTS);
     result.is_ok()
 }
 
@@ -285,6 +309,9 @@ mod tiny_the_ducks {
         assert!(results);
         assert!(select_version(&conn).is_ok());
         
+        let prep_results = setup_contract(&conn);
+        assert!(prep_results);
+        
         //add
         let date = Date::new(10,1,2025).unwrap();
         let add = Action::AddPlate(
@@ -350,10 +377,13 @@ mod tiny_the_ducks {
     #[test]
     fn test_listing()
     {
-        let conn = get_connection("/home/jon/Programming/plate-spinner/ps-core/test.db").unwrap();
-        //let results = setup_schema(&conn);
-        //assert!(results);
-        //assert!(select_version(&conn).is_ok());
+        let conn = get_connection("memory").unwrap();
+        let results = setup_schema(&conn);
+        assert!(results);
+        assert!(select_version(&conn).is_ok());
+        
+        let prep_results = setup_contract(&conn);
+        assert!(prep_results);
         
         for i in 1..10
         {
