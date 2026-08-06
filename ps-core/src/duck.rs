@@ -46,7 +46,7 @@ impl Action
         {
             Self::AddPlate(t,d,f,n ) => 
             {
-                format!("('{}','{}','{}','{}','{}')",t, d, f.to_string(), n.to_string(), n.to_string())
+                format!("('{}','{}','{}','{}')",t, d, f.to_string(), n.to_string())
             },
             Self::UpdatePlate(t,d,f,id) => 
             {
@@ -152,8 +152,7 @@ impl List
                     row.get(3)?,
                     row.get(4)?,
                     row.get(5)?,
-                    row.get(6)?,
-                    row.get(7)?
+                    row.get(6)?
                 )
             )
             }
@@ -176,14 +175,9 @@ impl List
                         {
                             println!("Error parsing plate {:?}",e);
                         }
-                    }
-                    
-                    
+                    } 
                 }
                 Ok(plates)
-                /*Ok(
-                    rows.filter_map(|r| r.ok()).collect()
-                )*/
             },
             Err (e) => Err(DBError::UnexpectedResults)
         }

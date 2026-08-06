@@ -66,7 +66,6 @@ pub struct Plate
     description:String,
     frequency:DuckDateInterval,
     next:DuckDate,
-    started:DuckDate,
     saved:u32,
     spinning:bool, 
 }
@@ -75,7 +74,7 @@ impl Plate
 {
     pub fn new(
         id:u32, title:String, description:String, frequency:DuckDateInterval,
-        next:DuckDate, started:DuckDate, saved:u32, spinning:bool ) -> Plate
+        next:DuckDate, saved:u32, spinning:bool ) -> Plate
     {
         Plate
         {
@@ -84,7 +83,6 @@ impl Plate
             description,
             frequency,
             next,
-            started,
             saved,
             spinning
         }
