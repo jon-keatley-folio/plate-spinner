@@ -7,10 +7,11 @@ use crate::{
 };
 
 #[derive(PartialEq, Debug, Clone)]
-pub(crate) enum DBError {
+pub enum DBError {
     FailedToConnect,
     FailedToCompileQuery,
     FailedToBuildQuery,
+    FailedToSetupContract,
     ErrorInQuery,
     UnexpectedResults,
     UnableToCreateSchema,
@@ -18,7 +19,7 @@ pub(crate) enum DBError {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-pub(crate) enum Action {
+pub enum Action {
     AddPlate(String, String, DateInterval, Date),
     UpdatePlate(String, String, DateInterval, u32),
     PausePlate(u32),
@@ -38,7 +39,7 @@ impl Action {
         }
     }
 
-    fn execute(&self, conn: &Connection) -> Result<bool, DBError> {
+    pub fn execute(&self, conn: &Connection) -> Result<bool, DBError> {
         let params = match self {
             Self::AddPlate(t, d, f, n) => {
                 format!("('{}','{}','{}','{}')", t, d, f.to_string(), n.to_string())
@@ -83,7 +84,7 @@ impl Action {
 }
 
 #[derive(PartialEq, Debug, Clone)]
-pub(crate) enum List {
+pub enum List {
     TopTopples(u32),
     PausedPlates(u32),
     All(u32, u32),
@@ -150,7 +151,7 @@ impl List {
     }
 }
 
-pub(crate) fn get_connection(con_uri: &str) -> Result<Connection, DBError> {
+fn get_connection(con_uri: &str) -> Result<Connection, DBError> {
     let conn = if con_uri == "memory" {
         Connection::open_in_memory()
     } else {
@@ -163,7 +164,7 @@ pub(crate) fn get_connection(con_uri: &str) -> Result<Connection, DBError> {
     }
 }
 
-pub(crate) fn select_version(conn: &Connection) -> Result<(), DBError> {
+fn select_version(conn: &Connection) -> Result<(), DBError> {
     match conn.execute(&format!("use {}", LATEST_VERSION), []) {
         Ok(_) => Ok(()),
         Err(_) => Err(DBError::FailedToConnect),
@@ -195,7 +196,7 @@ fn check_latest_schema(conn: &Connection) -> Result<bool, DBError> {
     Err(DBError::UnableToCheckSchema)
 }
 
-pub(crate) fn check_or_create_schema(conn: &Connection) -> Result<bool, DBError> {
+fn check_or_create_schema(conn: &Connection) -> Result<bool, DBError> {
     match check_latest_schema(conn) {
         Ok(true) => return Ok(true),
         Ok(false) => {
@@ -209,8 +210,20 @@ pub(crate) fn check_or_create_schema(conn: &Connection) -> Result<bool, DBError>
     }
 }
 
+pub fn connect(con_uri:&str) -> Result<Connection, DBError>
+{
+    let conn = get_connection(con_uri)?;
+    check_or_create_schema(&conn)?;
+    
+    match setup_contract(&conn)
+    {
+        true => Ok(conn),
+        false => Err(DBError::FailedToSetupContract)
+    }
+}
+
 #[cfg(test)]
-mod tiny_the_ducks {
+mod test_plate_data {
     use super::*;
     use tiny_date::Interval;
 
@@ -238,6 +251,13 @@ mod tiny_the_ducks {
 
         assert!(schema_check_two.is_ok());
         assert!(schema_check_two.unwrap());
+    }
+    
+    #[test]
+    fn test_connect()
+    {
+        let test = connect("memory");
+        assert!(test.is_ok());
     }
 
     #[test]

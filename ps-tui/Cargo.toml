@@ -5,3 +5,7 @@ edition = "2024"
 
 [dependencies]
 ratatui = "0.30.0"
+
+[dependencies.ps-core]
+version="*"
+path="../ps-core"

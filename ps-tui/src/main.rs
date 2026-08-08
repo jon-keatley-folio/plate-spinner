@@ -9,9 +9,15 @@
 - [ ] About and other polish
 */
 
+use ps_core::plate_data::{connect,Action,List,DBError};
+
 
 fn main() {
     println!("Hello, world!");
+    
+    let test = connect("memory");
+    
+    assert!(test.is_ok());
 }
 
 
