@@ -1,90 +1,117 @@
+use duckdb::types::{FromSql, FromSqlError, ValueRef};
 use tiny_date::{Date, DateInterval, Interval};
-use duckdb::types::{FromSql,FromSqlError,ValueRef};
 
-
+#[derive(Clone)]
 pub struct DuckDate(Date);
 
-impl FromSql for DuckDate
-{
-    fn column_result(value: duckdb::types::ValueRef<'_>) -> duckdb::types::FromSqlResult<Self> 
-    {
-        match value
-        {
-            ValueRef::Date32(d) => 
-            {
-                if d < 0
-                {
+impl FromSql for DuckDate {
+    fn column_result(value: duckdb::types::ValueRef<'_>) -> duckdb::types::FromSqlResult<Self> {
+        match value {
+            ValueRef::Date32(d) => {
+                if d < 0 {
                     Err(FromSqlError::OutOfRange(0))
-                }
-                else
-                {
-                    match Date::from_timestamp(d as u32)
-                    {
+                } else {
+                    match Date::from_timestamp(d as u32) {
                         Ok(da) => Ok(DuckDate(da)),
-                        Err(e) => Err(FromSqlError::OutOfRange(0))
+                        Err(e) => Err(FromSqlError::OutOfRange(0)),
                     }
                 }
-                
-            },
-            _ => Err(FromSqlError::InvalidType)
+            }
+            _ => Err(FromSqlError::InvalidType),
         }
     }
 }
 
+#[derive(Clone)]
 pub struct DuckDateInterval(DateInterval);
 
-impl FromSql for DuckDateInterval
-{
+impl FromSql for DuckDateInterval {
     fn column_result(value: ValueRef<'_>) -> duckdb::types::FromSqlResult<Self> {
-        match value
-        {
-            ValueRef::Interval { months, days, nanos } =>
-            {
-                if months > 0
-                {
-                    Ok(DuckDateInterval(DateInterval { amount:months as u32, period:Interval::Month  }))
+        match value {
+            ValueRef::Interval {
+                months,
+                days,
+                nanos,
+            } => {
+                if months > 0 {
+                    Ok(DuckDateInterval(DateInterval {
+                        amount: months as u32,
+                        period: Interval::Month,
+                    }))
+                } else if days > 0 {
+                    Ok(DuckDateInterval(DateInterval {
+                        amount: days as u32,
+                        period: Interval::Day,
+                    }))
+                } else {
+                    let amount = nanos / (1_000_000_000 * 60 * 60 * 24);
+                    Ok(DuckDateInterval(DateInterval {
+                        amount: amount as u32,
+                        period: Interval::Day,
+                    }))
                 }
-                else if days > 0
-                {
-                    Ok(DuckDateInterval(DateInterval { amount:days as u32, period:Interval::Day }))
-                }
-                else
-                {
-                    let amount = nanos /  (1_000_000_000 * 60 * 60 * 24);
-                    Ok(DuckDateInterval(DateInterval { amount:amount as u32, period:Interval::Day }))
-                }
-            },
-            _ => Err(FromSqlError::InvalidType)
+            }
+            _ => Err(FromSqlError::InvalidType),
         }
     }
 }
 
-pub struct Plate
-{
-    id:u32,
-    title:String,
-    description:String,
-    frequency:DuckDateInterval,
-    next:DuckDate,
-    saved:u32,
-    spinning:bool, 
+pub struct Plate {
+    id: u32,
+    title: String,
+    description: String,
+    frequency: DuckDateInterval,
+    next: DuckDate,
+    saved: u32,
+    spinning: bool,
 }
 
-impl Plate
-{
+impl Plate {
     pub fn new(
-        id:u32, title:String, description:String, frequency:DuckDateInterval,
-        next:DuckDate, saved:u32, spinning:bool ) -> Plate
-    {
-        Plate
-        {
+        id: u32,
+        title: String,
+        description: String,
+        frequency: DuckDateInterval,
+        next: DuckDate,
+        saved: u32,
+        spinning: bool,
+    ) -> Plate {
+        Plate {
             id,
             title,
             description,
             frequency,
             next,
             saved,
-            spinning
+            spinning,
         }
+    }
+
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    pub fn title(&self) -> &str {
+        &self.title
+    }
+
+    pub fn description(&self) -> &str {
+        &self.description
+    }
+
+    pub fn frequency(&self) -> DuckDateInterval {
+        self.frequency.clone()
+    }
+
+    pub fn next(&self) -> DuckDate {
+        self.next.clone()
+    }
+
+    pub fn spinning(&self) -> bool {
+        self.spinning
+    }
+
+    pub fn saved(&self) -> u32 {
+        self.saved
     }
 }

@@ -1,6 +1,11 @@
 use std::fmt;
 use std::fmt::Formatter;
 
+/* TODO
+- [ ] Check tests
+- [ ] Look at registering crate
+*/
+
 #[derive(PartialEq, Debug)]
 pub enum Months
 {
