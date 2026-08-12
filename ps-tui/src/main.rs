@@ -19,6 +19,7 @@
 mod actions;
 mod panels {
     mod panel;
+    mod plate_list;
 }
 
 use std::io;

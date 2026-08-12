@@ -9,7 +9,7 @@ pub trait PSPanel {
     fn has_focus(&self) -> bool;
     fn set_focus(&mut self, focus: bool);
     fn key_input(&mut self, event: KeyEvent) -> Commands;
-    fn get_actions(&self) -> &[InfoItem];
+    fn get_actions(&self) -> Option<&[InfoItem]>;
     fn render(&self, frame: &mut Frame)
     where
         Self: Sized;
