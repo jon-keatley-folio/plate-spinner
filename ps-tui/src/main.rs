@@ -16,27 +16,40 @@
       - Actions panel
       - Title
 */
-mod actions;
-mod panels {
-    mod panel;
-    mod plate_list;
+pub(crate) mod actions;
+pub(crate) mod panels {
+    pub(crate) mod panel;
+    pub(crate) mod plate_list;
 }
 
-use std::io;
+use std::{any::Any, io};
 
 use crossterm::event;
 
 use ratatui::{DefaultTerminal, Frame, layout::Rect, widgets::Clear};
 
+use crate::panels::{panel::PSPanel, plate_list::PlateList};
 use ps_core::plate_data::{Action, DBError, List, connect};
+
+enum Mode {
+    List,
+    NewPlate,
+    EditPlate,
+}
 
 struct PlateSpinnerApp {
     exit: bool,
+    mode: Mode,
+    list_panel: PlateList,
 }
 
 impl PlateSpinnerApp {
     fn new() -> Result<PlateSpinnerApp, String> {
-        Ok(PlateSpinnerApp { exit: false })
+        Ok(PlateSpinnerApp {
+            exit: false,
+            mode: Mode::List,
+            list_panel: PlateList::new(),
+        })
     }
 
     fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
@@ -47,7 +60,38 @@ impl PlateSpinnerApp {
         Ok(())
     }
 
-    fn draw(&mut self, frame: &mut Frame) {}
+    fn draw(&mut self, frame: &mut Frame) {
+        //check there is room for the title
+        //chunk up space for list, controls, info
+        let show_title = frame.area().height > 20;
+        let show_extra = frame.area().width > 30;
+        let main_panel_width = if show_extra {
+            frame.area().width - 28
+        } else {
+            frame.area().width
+        };
+
+        let main_panel_height = if show_title {
+            frame.area().height - 18
+        } else {
+            frame.area().height
+        };
+
+        let main_rect = Rect::new(
+            frame.area().x,
+            frame.area().y,
+            main_panel_width,
+            main_panel_height,
+        );
+
+        match self.mode {
+            Mode::List => {
+                self.list_panel.render(frame, main_rect);
+            }
+            Mode::NewPlate => {}
+            Mode::EditPlate => {}
+        }
+    }
 
     fn handle_events(&mut self) -> io::Result<()> {
         Ok(())

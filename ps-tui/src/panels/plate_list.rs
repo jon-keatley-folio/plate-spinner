@@ -3,13 +3,26 @@ use crate::{
     panels::panel::{PSPanel, impl_ps_panel},
 };
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::Frame;
+use ratatui::{
+    Frame,
+    buffer::Buffer,
+    layout::Rect,
+    style::{Color, Style, Stylize},
+    symbols::border,
+    text::{Line, Span, Text},
+    widgets::{Block, Paragraph, Widget},
+};
 
+#[derive(Debug, Clone)]
 pub struct PlateList {}
 
 impl_ps_panel!(PlateList);
 
 impl PlateList {
+    pub fn new() -> PlateList {
+        PlateList {}
+    }
+
     pub fn has_focus(&self) -> bool {
         false
     }
@@ -17,12 +30,24 @@ impl PlateList {
     pub fn set_focus(&mut self, focus: bool) {}
 
     pub fn key_input(&mut self, event: KeyEvent) -> Commands {
-        Commands::CreatePlate
+        Commands::NoAction
     }
 
     pub fn get_actions(&self) -> Option<&[InfoItem]> {
         None
     }
 
-    fn render(&self, frame: &mut Frame) {}
+    fn render(&self, frame: &mut Frame, bounds: Rect) {
+        //check frame size
+        //draw border with title
+        //render plates
+        let border_style = Style::new().on_black().fg(Color::White);
+
+        let title = Line::from("Plates".bold());
+        let block = Block::bordered()
+            .title(title)
+            .border_set(border::PLAIN)
+            .border_style(border_style);
+        frame.render_widget(block, bounds);
+    }
 }

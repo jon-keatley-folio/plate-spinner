@@ -1,9 +1,10 @@
 pub enum Commands {
-    CreatePlate,
-    EditPlate,
-    PausePlate,
-    SpinPlate,
-    DeletePlate,
+    Create,
+    Edit,
+    Pause,
+    Spin,
+    Delete,
+    NoAction,
 }
 
 pub struct InfoItem {
