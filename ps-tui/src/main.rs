@@ -24,7 +24,7 @@ pub(crate) mod panels {
 
 use std::{any::Any, io};
 
-use crossterm::event;
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 
 use ratatui::{DefaultTerminal, Frame, layout::Rect, widgets::Clear};
 
@@ -42,6 +42,9 @@ struct PlateSpinnerApp {
     mode: Mode,
     list_panel: PlateList,
 }
+
+const TERM_WIDTHS: [u16; 5] = [80, 106, 132, 158, 184];
+const TERM_HEIGHTS: [u16; 4] = [24, 28, 32, 36];
 
 impl PlateSpinnerApp {
     fn new() -> Result<PlateSpinnerApp, String> {
@@ -63,23 +66,23 @@ impl PlateSpinnerApp {
     fn draw(&mut self, frame: &mut Frame) {
         //check there is room for the title
         //chunk up space for list, controls, info
-        let show_title = frame.area().height > 20;
-        let show_extra = frame.area().width > 30;
-        let main_panel_width = if show_extra {
-            frame.area().width - 28
-        } else {
-            frame.area().width
-        };
+        let main_panel_height: u16 = *TERM_HEIGHTS
+            .iter()
+            .filter(|&x| *x < frame.area().height)
+            .max()
+            .unwrap_or(&frame.area().height);
 
-        let main_panel_height = if show_title {
-            frame.area().height - 18
-        } else {
-            frame.area().height
-        };
+        let main_panel_width: u16 = *TERM_WIDTHS
+            .iter()
+            .filter(|&x| *x < frame.area().width)
+            .max()
+            .unwrap_or(&frame.area().width);
+
+        let main_panel_y = frame.area().height - main_panel_height;
 
         let main_rect = Rect::new(
             frame.area().x,
-            frame.area().y,
+            main_panel_y,
             main_panel_width,
             main_panel_height,
         );
@@ -94,7 +97,21 @@ impl PlateSpinnerApp {
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
+        match event::read()? {
+            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                self.handle_key_event(key_event);
+            }
+            _ => {}
+        };
+
         Ok(())
+    }
+
+    fn handle_key_event(&mut self, key_event: KeyEvent) {
+        match key_event.code {
+            KeyCode::Esc => self.exit = true,
+            _ => {}
+        }
     }
 }
 
