@@ -18,8 +18,11 @@
 */
 pub(crate) mod actions;
 pub(crate) mod panels {
+    pub(crate) mod controls;
+    pub(crate) mod info;
     pub(crate) mod panel;
     pub(crate) mod plate_list;
+    pub(crate) mod title;
 }
 
 use std::{any::Any, io};
@@ -28,7 +31,10 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 
 use ratatui::{DefaultTerminal, Frame, layout::Rect, widgets::Clear};
 
-use crate::panels::{panel::PSPanel, plate_list::PlateList};
+use crate::panels::{
+    controls::Controls, info::Info, panel::PSPanel, plate_list::PlateList, title::Title,
+};
+
 use ps_core::plate_data::{Action, DBError, List, connect};
 
 enum Mode {
@@ -41,10 +47,13 @@ struct PlateSpinnerApp {
     exit: bool,
     mode: Mode,
     list_panel: PlateList,
+    title: Title,
+    info: Info,
+    controls: Controls,
 }
 
-const TERM_WIDTHS: [u16; 5] = [80, 106, 132, 158, 184];
-const TERM_HEIGHTS: [u16; 4] = [24, 28, 32, 36];
+const TERM_WIDTHS: [u16; 6] = [60, 84, 106, 132, 158, 184];
+const TERM_HEIGHTS: [u16; 4] = [20, 30, 38, 44];
 
 impl PlateSpinnerApp {
     fn new() -> Result<PlateSpinnerApp, String> {
@@ -52,6 +61,9 @@ impl PlateSpinnerApp {
             exit: false,
             mode: Mode::List,
             list_panel: PlateList::new(),
+            title: Title::new(),
+            info: Info::new(),
+            controls: Controls::new(),
         })
     }
 
@@ -79,6 +91,11 @@ impl PlateSpinnerApp {
             .unwrap_or(&frame.area().width);
 
         let main_panel_y = frame.area().height - main_panel_height;
+        let right_panel_width = frame.area().width - main_panel_width;
+
+        let title_rect = Rect::new(0, 0, main_panel_width, main_panel_y);
+
+        let controls_rect = Rect::new(main_panel_width, 0, right_panel_width, main_panel_y);
 
         let main_rect = Rect::new(
             frame.area().x,
@@ -87,6 +104,16 @@ impl PlateSpinnerApp {
             main_panel_height,
         );
 
+        let info_rect = Rect::new(
+            main_panel_width,
+            main_panel_y,
+            right_panel_width,
+            main_panel_height,
+        );
+
+        self.title.render(frame, title_rect);
+        self.info.render(frame, info_rect);
+        self.controls.render(frame, controls_rect);
         match self.mode {
             Mode::List => {
                 self.list_panel.render(frame, main_rect);
