@@ -1,5 +1,6 @@
 /* TODO
-- [ ] basic TUI app
+- [x] basic TUI app
+- [ ] Add message panel
 - [ ] config for DB location
 - [ ] Control panel
 - [ ] Add plate
@@ -78,17 +79,20 @@ impl PlateSpinnerApp {
     fn draw(&mut self, frame: &mut Frame) {
         //check there is room for the title
         //chunk up space for list, controls, info
-        let main_panel_height: u16 = *TERM_HEIGHTS
-            .iter()
-            .filter(|&x| *x < frame.area().height)
-            .max()
-            .unwrap_or(&frame.area().height);
+        /*let main_panel_height: u16 = *TERM_HEIGHTS
+        .iter()
+        .filter(|&x| *x < frame.area().height)
+        .max()
+        .unwrap_or(&frame.area().height);*/
+        let main_panel_height = f32::floor(frame.area().height as f32 * 0.8f32) as u16;
 
-        let main_panel_width: u16 = *TERM_WIDTHS
-            .iter()
-            .filter(|&x| *x < frame.area().width)
-            .max()
-            .unwrap_or(&frame.area().width);
+        /*let main_panel_width: u16 = *TERM_WIDTHS
+        .iter()
+        .filter(|&x| *x < frame.area().width)
+        .max()
+        .unwrap_or(&frame.area().width);*/
+
+        let main_panel_width = f32::floor(frame.area().width as f32 * 0.8f32) as u16;
 
         let main_panel_y = frame.area().height - main_panel_height;
         let right_panel_width = frame.area().width - main_panel_width;
