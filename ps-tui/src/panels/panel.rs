@@ -6,6 +6,7 @@ use crate::actions::{Commands, InfoItem};
 pub trait PSPanel {
     fn has_focus(&self) -> bool;
     fn set_focus(&mut self, focus: bool);
+    fn tick(&mut self);
     fn key_input(&mut self, event: KeyEvent) -> Commands;
     fn get_actions(&self) -> Option<&[InfoItem]>;
     fn render(&self, frame: &mut Frame, bounds: Rect);
@@ -32,6 +33,10 @@ macro_rules! impl_ps_panel {
 
             fn render(&self, frame: &mut Frame, bounds: Rect) {
                 self.render(frame, bounds);
+            }
+
+            fn tick(&mut self) {
+                self.tick();
             }
         }
     };

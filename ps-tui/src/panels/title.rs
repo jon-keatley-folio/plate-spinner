@@ -14,13 +14,15 @@ use ratatui::{
 };
 
 #[derive(Debug, Clone)]
-pub struct Title {}
+pub struct Title {
+    current_frame: u16,
+}
 
 impl_ps_panel!(Title);
 
 impl Title {
     pub fn new() -> Title {
-        Title {}
+        Title { current_frame: 0 }
     }
 
     pub fn has_focus(&self) -> bool {
@@ -36,6 +38,8 @@ impl Title {
     pub fn get_actions(&self) -> Option<&[InfoItem]> {
         None
     }
+
+    pub fn tick(&mut self) {}
 
     fn render(&self, frame: &mut Frame, bounds: Rect) {
         //check frame size

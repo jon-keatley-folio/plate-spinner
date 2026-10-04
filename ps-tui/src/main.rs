@@ -18,6 +18,7 @@
       - Title
 */
 pub(crate) mod actions;
+pub(crate) mod config;
 pub(crate) mod panels {
     pub(crate) mod controls;
     pub(crate) mod info;
@@ -36,12 +37,15 @@ use crate::panels::{
     controls::Controls, info::Info, panel::PSPanel, plate_list::PlateList, title::Title,
 };
 
+use crate::config::create_or_get_save_path;
+
 use ps_core::plate_data::{Action, DBError, List, connect};
 
 enum Mode {
     List,
     NewPlate,
     EditPlate,
+    Message,
 }
 
 struct PlateSpinnerApp {
@@ -52,9 +56,6 @@ struct PlateSpinnerApp {
     info: Info,
     controls: Controls,
 }
-
-const TERM_WIDTHS: [u16; 6] = [60, 84, 106, 132, 158, 184];
-const TERM_HEIGHTS: [u16; 4] = [20, 30, 38, 44];
 
 impl PlateSpinnerApp {
     fn new() -> Result<PlateSpinnerApp, String> {
@@ -77,21 +78,7 @@ impl PlateSpinnerApp {
     }
 
     fn draw(&mut self, frame: &mut Frame) {
-        //check there is room for the title
-        //chunk up space for list, controls, info
-        /*let main_panel_height: u16 = *TERM_HEIGHTS
-        .iter()
-        .filter(|&x| *x < frame.area().height)
-        .max()
-        .unwrap_or(&frame.area().height);*/
         let main_panel_height = f32::floor(frame.area().height as f32 * 0.8f32) as u16;
-
-        /*let main_panel_width: u16 = *TERM_WIDTHS
-        .iter()
-        .filter(|&x| *x < frame.area().width)
-        .max()
-        .unwrap_or(&frame.area().width);*/
-
         let main_panel_width = f32::floor(frame.area().width as f32 * 0.8f32) as u16;
 
         let main_panel_y = frame.area().height - main_panel_height;
@@ -122,6 +109,9 @@ impl PlateSpinnerApp {
             Mode::List => {
                 self.list_panel.render(frame, main_rect);
             }
+            Mode::Message => {
+                //todo add message
+            }
             Mode::NewPlate => {}
             Mode::EditPlate => {}
         }
@@ -147,8 +137,19 @@ impl PlateSpinnerApp {
 }
 
 fn main() {
-    let app_result = PlateSpinnerApp::new();
+    //initialise
+    // get save path
+    // check for db
+    // let the user know if a db is created
+    let save_path = match create_or_get_save_path() {
+        Ok(sp) => sp,
+        Err(e) => {
+            println!("Fatal error starting plat spinner! {}", e);
+            return;
+        }
+    };
 
+    let app_result = PlateSpinnerApp::new();
     match app_result {
         Ok(mut app) => {
             let mut terminal = ratatui::init();

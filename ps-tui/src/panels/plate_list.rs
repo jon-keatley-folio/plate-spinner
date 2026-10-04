@@ -27,6 +27,8 @@ impl PlateList {
         false
     }
 
+    pub fn tick(&mut self) {}
+
     pub fn set_focus(&mut self, focus: bool) {}
 
     pub fn key_input(&mut self, event: KeyEvent) -> Commands {
