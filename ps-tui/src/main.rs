@@ -39,7 +39,8 @@ use crate::panels::{
 
 use crate::config::create_or_get_save_path;
 
-use ps_core::plate_data::{Action, DBError, List, connect};
+use ps_core::plate_data::connect;
+use ps_core::plate_data::{Action, DBError, List, connect as ps_connect};
 
 enum Mode {
     List,
@@ -145,6 +146,14 @@ fn main() {
         Ok(sp) => sp,
         Err(e) => {
             println!("Fatal error starting plat spinner! {}", e);
+            return;
+        }
+    };
+
+    let conn = match ps_connect(&save_path.to_string_lossy()) {
+        Ok(c) => c,
+        Err(e) => {
+            println!("Fatal error connecting to db! {}", e);
             return;
         }
     };

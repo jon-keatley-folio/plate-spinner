@@ -33,6 +33,8 @@ impl Controls {
         Commands::NoAction
     }
 
+    pub fn tick(&mut self) {}
+
     pub fn get_actions(&self) -> Option<&[InfoItem]> {
         None
     }

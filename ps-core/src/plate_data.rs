@@ -18,6 +18,21 @@ pub enum DBError {
     UnableToCheckSchema,
 }
 
+impl std::fmt::Display for DBError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DBError::FailedToConnect => write!(f, "Failed to connect to database"),
+            DBError::FailedToCompileQuery => write!(f, "Failed to compile query"),
+            DBError::FailedToBuildQuery => write!(f, "Failed to build query"),
+            DBError::FailedToSetupContract => write!(f, "Failed to setup database contract"),
+            DBError::ErrorInQuery => write!(f, "Failed to query database"),
+            DBError::UnexpectedResults => write!(f, "Unexpected database results"),
+            DBError::UnableToCreateSchema => write!(f, "Unable to create schema"),
+            DBError::UnableToCheckSchema => write!(f, "Unable to validate database version"),
+        }
+    }
+}
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Action {
     AddPlate(String, String, DateInterval, Date),
@@ -210,15 +225,13 @@ fn check_or_create_schema(conn: &Connection) -> Result<bool, DBError> {
     }
 }
 
-pub fn connect(con_uri:&str) -> Result<Connection, DBError>
-{
+pub fn connect(con_uri: &str) -> Result<Connection, DBError> {
     let conn = get_connection(con_uri)?;
     check_or_create_schema(&conn)?;
-    
-    match setup_contract(&conn)
-    {
+
+    match setup_contract(&conn) {
         true => Ok(conn),
-        false => Err(DBError::FailedToSetupContract)
+        false => Err(DBError::FailedToSetupContract),
     }
 }
 
@@ -252,10 +265,9 @@ mod test_plate_data {
         assert!(schema_check_two.is_ok());
         assert!(schema_check_two.unwrap());
     }
-    
+
     #[test]
-    fn test_connect()
-    {
+    fn test_connect() {
         let test = connect("memory");
         assert!(test.is_ok());
     }
