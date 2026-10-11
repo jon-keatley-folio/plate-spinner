@@ -57,7 +57,7 @@ impl Action {
     pub fn execute(&self, conn: &Connection) -> Result<bool, DBError> {
         let params = match self {
             Self::AddPlate(t, d, f, n) => {
-                format!("('{}','{}','{}','{}')", t, d, f.to_string(), n.to_string())
+                format!("('{}','{}','{}','{}')", t, d, f, n)
             }
             Self::UpdatePlate(t, d, f, id) => {
                 let interval = f.to_string();

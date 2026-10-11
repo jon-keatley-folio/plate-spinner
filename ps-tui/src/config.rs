@@ -53,7 +53,7 @@ pub fn create_or_get_save_path() -> Result<PathBuf, PathError> {
     let mut save_path = get_a_save_path_root();
     save_path.push(SAVE_FOLDER);
 
-    if !exists(&save_path).map_err(map_path_error)? {
+    if exists(&save_path).map_err(map_path_error)? {
         save_path.push(DB_NAME);
         Ok(save_path)
     } else {

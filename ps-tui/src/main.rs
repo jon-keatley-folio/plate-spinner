@@ -39,8 +39,8 @@ use crate::panels::{
 
 use crate::config::create_or_get_save_path;
 
-use ps_core::plate_data::connect;
-use ps_core::plate_data::{Action, DBError, List, connect as ps_connect};
+use ps_core::PlateSpinnerCore;
+use ps_core::plate_data::{Action, DBError, List};
 
 enum Mode {
     List,
@@ -56,10 +56,11 @@ struct PlateSpinnerApp {
     title: Title,
     info: Info,
     controls: Controls,
+    core: PlateSpinnerCore,
 }
 
 impl PlateSpinnerApp {
-    fn new() -> Result<PlateSpinnerApp, String> {
+    fn new(core: PlateSpinnerCore) -> Result<PlateSpinnerApp, String> {
         Ok(PlateSpinnerApp {
             exit: false,
             mode: Mode::List,
@@ -67,6 +68,7 @@ impl PlateSpinnerApp {
             title: Title::new(),
             info: Info::new(),
             controls: Controls::new(),
+            core,
         })
     }
 
@@ -150,15 +152,19 @@ fn main() {
         }
     };
 
-    let conn = match ps_connect(&save_path.to_string_lossy()) {
+    let core = match PlateSpinnerCore::new(&save_path.to_string_lossy()) {
         Ok(c) => c,
         Err(e) => {
-            println!("Fatal error connecting to db! {}", e);
+            println!(
+                "Fatal error connecting to db! {}\n{}",
+                e,
+                save_path.to_string_lossy()
+            );
             return;
         }
     };
 
-    let app_result = PlateSpinnerApp::new();
+    let app_result = PlateSpinnerApp::new(core);
     match app_result {
         Ok(mut app) => {
             let mut terminal = ratatui::init();
