@@ -27,6 +27,7 @@ pub(crate) mod panels {
     pub(crate) mod title;
 }
 
+use std::time::Duration;
 use std::{any::Any, io};
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
@@ -40,7 +41,10 @@ use crate::panels::{
 use crate::config::create_or_get_save_path;
 
 use ps_core::PlateSpinnerCore;
+use ps_core::model::Plate;
 use ps_core::plate_data::{Action, DBError, List};
+
+const LIST_REFRESH_RATE: usize = 100; // att 100ms that should be 10 seconds
 
 enum Mode {
     List,
@@ -57,6 +61,9 @@ struct PlateSpinnerApp {
     info: Info,
     controls: Controls,
     core: PlateSpinnerCore,
+    refresh_list_ticks: usize,
+    plates: Vec<Plate>,
+    selected_plate: Option<Plate>,
 }
 
 impl PlateSpinnerApp {
@@ -69,6 +76,9 @@ impl PlateSpinnerApp {
             info: Info::new(),
             controls: Controls::new(),
             core,
+            refresh_list_ticks: LIST_REFRESH_RATE,
+            plates: Vec::new(),
+            selected_plate: None,
         })
     }
 
@@ -121,12 +131,34 @@ impl PlateSpinnerApp {
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        match event::read()? {
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event);
+        if event::poll(Duration::from_millis(100)).is_ok() {
+            self.refresh_list_ticks += 1;
+
+            if self.refresh_list_ticks >= LIST_REFRESH_RATE {
+                //todo reload list
+                self.refresh_list_ticks = 0;
+
+                let update_list = List::TopTopples(10);
+                let update_result = self.core.execute_list(update_list);
+                match update_result {
+                    Ok(l) => self.plates = l,
+                    Err(e) => {
+                        //todo
+                        // change to message
+                        // display error
+                    }
+                }
             }
-            _ => {}
-        };
+
+            self.title.tick();
+
+            match event::read()? {
+                Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                    self.handle_key_event(key_event);
+                }
+                _ => {}
+            };
+        }
 
         Ok(())
     }
